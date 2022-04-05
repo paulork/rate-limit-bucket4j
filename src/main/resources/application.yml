@@ -1,0 +1,56 @@
+bucket4j:
+    enabled: true
+    filters:
+    -   cache-name: buckets_ehcache
+        filter-method: servlet
+        filter-order: 1
+        http-response-body: '{"message": "Too many requests"}'
+        rate-limits:
+        -   bandwidths:
+            -   capacity: 2
+                fixed-refill-interval: 5
+                fixed-refill-interval-unit: seconds
+                time: 1
+                unit: seconds
+            expression: getRemoteAddr()
+        strategy: first
+        url: /hello
+
+    -   cache-name: buckets_hazelcast
+        filter-method: servlet
+        filter-order: 2
+        http-response-body: '{"message": "Too many requests"}'
+        metrics:
+            enabled: true
+            tags:
+            -   expression: getRemoteAddr()
+                key: IP
+                types: REJECTED_COUNTER
+            -   expression: getRequestURI()
+                key: URL
+            -   expression: '"@securityService.username() != null ? @securityService.username()
+                    : ''anonym''"'
+                key: USERNAME
+            types: CONSUMED_COUNTER,REJECTED_COUNTER
+        rate-limits:
+        -   bandwidths:
+            -   capacity: 2
+                fixed-refill-interval: 10
+                fixed-refill-interval-unit: seconds
+                time: 1
+                unit: minutes
+            expression: getRemoteAddr()
+        strategy: first
+        url: /hell0
+
+# Não é possivel ter os dois ativos na aplicação:
+# - ehcache (arquivo ehcache.xml)
+# - hazelcast (arquivo hazelcast.xml)
+# Também é necessário comentar no POM a dependência
+# que não será usada.
+spring:
+    cache:
+        jcache:
+            config: classpath:hazelcast.xml
+    main:
+        allow-bean-definition-overriding: true
